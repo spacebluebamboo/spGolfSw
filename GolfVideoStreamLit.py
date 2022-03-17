@@ -29,7 +29,10 @@ class SampleVideo(Dataset):
     def __getitem__(self, idx):
         cap = cv2.VideoCapture(self.path)
         frame_size = [cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FRAME_WIDTH)]
-        ratio = self.input_size / max(frame_size)
+        try:
+            ratio = self.input_size / max(frame_size)
+        except:
+            ratio=1
         new_size = tuple([int(x * ratio) for x in frame_size])
         delta_w = self.input_size - new_size[1]
         delta_h = self.input_size - new_size[0]
