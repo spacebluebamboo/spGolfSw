@@ -2,6 +2,7 @@ torch
 torchvision
 pandas
 opencv-python
+scipy
 Pillow
 matplotlib
 numpy
