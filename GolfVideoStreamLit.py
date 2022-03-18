@@ -354,7 +354,7 @@ def loadStuff():
 stra, events = loadStuff()
 uploaded_files = st.file_uploader("Choose image files", accept_multiple_files=False)
 
-
+uploaded_files
 
 if uploaded_files:
 
