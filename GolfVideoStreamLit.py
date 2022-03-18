@@ -351,7 +351,7 @@ def loadStuff():
     return stra, events
      
 
-stra, events = loadStuff()
+
 uploaded_files = st.file_uploader("Choose image files", accept_multiple_files=False)
 
 uploaded_files
@@ -359,7 +359,7 @@ uploaded_files
 if uploaded_files:
 
     ########################################################################
-
+    stra, events = loadStuff()
     
     lsa=os.listdir()
     fimg=[ ll for ll in lsa if ll.split('.')[-1]=='jpg']
