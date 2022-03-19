@@ -10,8 +10,6 @@ import torch.nn.functional as F
 import cv2
 from torch.autograd import Variable
 import streamlit as st
-import os
-import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
     
