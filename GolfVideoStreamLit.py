@@ -331,7 +331,7 @@ def loadStuff():
     print('Using device:', device)
     model.load_state_dict(save_dict['model_state_dict'])
     model.to(device)
-#     model.eval()
+    model.eval()
 #     print("Loaded model weights")
 
 #     print('Testing...')
