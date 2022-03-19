@@ -364,8 +364,8 @@ def loadStuff():
     
     
     
-    imgALL, nom=createImages(uploaded_filesCOPY,'10',events)
-
+#     imgALL, nom=createImages(uploaded_filesCOPY,'10',events)
+    imgALL=[]
     return stra, events,imgALL, nom
      
 
