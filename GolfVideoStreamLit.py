@@ -330,7 +330,7 @@ def loadStuff():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print('Using device:', device)
     model.load_state_dict(save_dict['model_state_dict'])
-#     model.to(device)
+    model.to(device)
 #     model.eval()
 #     print("Loaded model weights")
 
