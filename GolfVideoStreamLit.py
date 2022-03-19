@@ -15,11 +15,14 @@ import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
     
+import copy
+import tempfile
+
 st.title('Golf Swing')
 
 class SampleVideo(Dataset):
     def __init__(self, path, input_size=160, transform=None):
-        self.path = path
+#         self.path = self.name
         self.input_size = input_size
         self.transform = transform
 
@@ -27,7 +30,13 @@ class SampleVideo(Dataset):
         return 1
 
     def __getitem__(self, idx):
-        cap = cv2.VideoCapture(self.path)
+        
+        # create a fake file ffs
+        tfile = tempfile.NamedTemporaryFile(delete=False)
+        tfile.write(uploaded_files.read())
+        cap = cv2.VideoCapture(tfile.name)
+
+#         cap = cv2.VideoCapture(self)
         frame_size = [cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FRAME_WIDTH)]
         try:
             ratio = self.input_size / max(frame_size)
@@ -50,8 +59,13 @@ class SampleVideo(Dataset):
             b_img_rgb = cv2.cvtColor(b_img, cv2.COLOR_BGR2RGB)
             images.append(b_img_rgb)
         cap.release()
+#         cv2.destroyAllWindows()
+        
         labels = np.zeros(len(images)) # only for compatibility with transforms
         sample = {'images': np.asarray(images), 'labels': np.asarray(labels)}
+        
+
+        
         if self.transform:
             sample = self.transform(sample)
         return sample
@@ -261,25 +275,39 @@ class EventDetector(nn.Module):
 
         return out
 
-def createImages(fila,pos,nomS,events):
+def createImages(fila,nomS,events):
     ''' 
     Given a video file location (fila) it will save as images to a folder
     Given positions in video (pos) these images from the video are saved
     pos is created based on positions of swings
     '''
+    fila
+    tfile2 = tempfile.NamedTemporaryFile(delete=False)
+    tfile2.write(fila.read())
+    cap = cv2.VideoCapture(tfile2.name)
     
-    cap = cv2.VideoCapture(fila)
+    
     eventNom=[0,1,2,3,4,5,6,7]
+    imgALL=[]
+    nom=[]
     for i, e in enumerate(events):
         cap.set(cv2.CAP_PROP_POS_FRAMES, e)
-        _, img = cap.read()
-        cv2.imwrite(os.path.join(os.getcwd(),'_'+ nomS+'_'+"frame{:d}.jpg".format(eventNom[i])), img)     # save frame as JPG file
-    
+        ret, img = cap.read()
+        if not ret:
+            print("Can't receive frame (stream end?). Exiting ...")
+        imgALL.append(img)
+        nom.append(e)
+#         print( np.shape(img) )
+#         cv2.imwrite(os.path.join(os.getcwd(),'_'+ nomS+'_'+"frame{:d}.jpg".format(eventNom[i])), img)     # save frame as JPG file
+        
+
+    cap.release()
+    return imgALL, nom
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-@st.cache(allow_output_mutation=True)
+@st.cache(allow_output_mutation=True,suppress_st_warning=True)
 def loadStuff():
-    stra = 'C:\\Users\\44781\\Downloads\\IMG_1740.MOV'
+    stra = uploaded_files
     
     seq_length=64
 
@@ -336,50 +364,33 @@ def loadStuff():
     print('Confidence: {}'.format([np.round(c, 3) for c in confidence]))
     
     
-    ##delte images
-    lsa=os.listdir()
-    fimg=[ ll for ll in lsa if ll.split('.')[-1]=='jpg']
-    # print(fimg)
-    imgs=[os.remove(ff) for ff in fimg]
-
-    fimg=[ ll for ll in lsa if ll.split('.')[-1]=='jpg']
     
-    fila=stra
-    pos=events
-    createImages(fila,pos,'10',events)
+    
+    imgALL, nom=createImages(uploaded_filesCOPY,'10',events)
 
-    return stra, events
+    return stra, events,imgALL, nom
      
 
 
 uploaded_files = st.file_uploader("Choose image files", accept_multiple_files=False)
 
-uploaded_files
+
 
 if uploaded_files:
 
+    uploaded_filesCOPY = copy.copy( uploaded_files )
     ########################################################################
-    stra, events = loadStuff()
+    stra, events,imgALL,fimg = loadStuff()
     
-    lsa=os.listdir()
-    fimg=[ ll for ll in lsa if ll.split('.')[-1]=='jpg']
-    fimg.sort()
+    
 
-    imgs=[mpimg.imread(ff) for ff in fimg]
-
-
-    cap = cv2.VideoCapture(stra)
     imgSEL = st.sidebar.selectbox(
             'Select Image',
              fimg)
 
     numSEL=[oo for oo,x in enumerate(fimg) if x==imgSEL][0]
 
-    imgALL=[]
-    for i, e in enumerate(events):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, e)
-        _, img = cap.read()
-        imgALL.append(img)
+
 
     f=plt.figure(figsize=(6,6))
 
