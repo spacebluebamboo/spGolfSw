@@ -308,8 +308,9 @@ def loadStuff():
     stra = uploaded_files
     
     seq_length=64
-
-    ds = SampleVideo(stra, transform=transforms.Compose([ToTensor(),
+    input_size=120
+    
+    ds = SampleVideo(stra, input_size=input_size,transform=transforms.Compose([ToTensor(),
                                 Normalize([0.485, 0.456, 0.406],
                                           [0.229, 0.224, 0.225])]))
 
@@ -332,40 +333,40 @@ def loadStuff():
     model.load_state_dict(save_dict['model_state_dict'])
     model.to(device)
     model.eval()
-#     print("Loaded model weights")
+    print("Loaded model weights")
 
-#     print('Testing...')
-#     for sample in dl:
-#         images = sample['images']
-#         # full samples do not fit into GPU memory so evaluate sample in 'seq_length' batches
-#         batch = 0
-#         while batch * seq_length < images.shape[1]:
-#             if (batch + 1) * seq_length > images.shape[1]:
-#                 image_batch = images[:, batch * seq_length:, :, :, :]
-#             else:
-#                 image_batch = images[:, batch * seq_length:(batch + 1) * seq_length, :, :, :]
-#             logits = model(image_batch)
-#             if batch == 0:
-#                 probs = F.softmax(logits.data, dim=1).cpu().numpy()
-#             else:
-#                 probs = np.append(probs, F.softmax(logits.data, dim=1).cpu().numpy(), 0)
-#             batch += 1
-
-
-#     events = np.argmax(probs, axis=0)[:-1]
-#     print('Predicted event frames: {}'.format(events))
+    print('Testing...')
+    for sample in dl:
+        images = sample['images']
+        # full samples do not fit into GPU memory so evaluate sample in 'seq_length' batches
+        batch = 0
+        while batch * seq_length < images.shape[1]:
+            if (batch + 1) * seq_length > images.shape[1]:
+                image_batch = images[:, batch * seq_length:, :, :, :]
+            else:
+                image_batch = images[:, batch * seq_length:(batch + 1) * seq_length, :, :, :]
+            logits = model(image_batch)
+            if batch == 0:
+                probs = F.softmax(logits.data, dim=1).cpu().numpy()
+            else:
+                probs = np.append(probs, F.softmax(logits.data, dim=1).cpu().numpy(), 0)
+            batch += 1
 
 
-#     confidence = []
-#     for i, e in enumerate(events):
-#         confidence.append(probs[e, i])
-#     print('Confidence: {}'.format([np.round(c, 3) for c in confidence]))
+    events = np.argmax(probs, axis=0)[:-1]
+    print('Predicted event frames: {}'.format(events))
+
+
+    confidence = []
+    for i, e in enumerate(events):
+        confidence.append(probs[e, i])
+    print('Confidence: {}'.format([np.round(c, 3) for c in confidence]))
     
     
     
     
-#     imgALL, nom=createImages(uploaded_filesCOPY,'10',events)
-    stra, events,imgALL, nom=[],[],[],[]
+    imgALL, nom=createImages(uploaded_filesCOPY,'10',events)
+#     stra, events,imgALL, nom=[],[],[],[]
     return stra, events,imgALL, nom
      
 
