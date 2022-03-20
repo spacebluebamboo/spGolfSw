@@ -382,21 +382,21 @@ if uploaded_files:
     stra, events,imgALL,fimg = loadStuff()
     
     
-    fimg=['1','2']
+#     fimg=['1','2']
     
     imgSEL = st.sidebar.selectbox(
             'Select Image',
              fimg)
 
-#     numSEL=[oo for oo,x in enumerate(fimg) if x==imgSEL][0]
+    numSEL=[oo for oo,x in enumerate(fimg) if x==imgSEL][0]
 
 
 
-#     f=plt.figure(figsize=(6,6))
+    f=plt.figure(figsize=(6,6))
 
-#     plt.imshow(imgALL[numSEL])
+    plt.imshow(imgALL[numSEL])
 
-#     st.pyplot(f)
+    st.pyplot(f)
     
     
     
