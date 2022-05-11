@@ -386,7 +386,7 @@ if uploaded_files:
     
 #     fimg=['1','2']
     
-    imgSEL = st.sidebar.selectbox(
+    imgSEL = st.selectbox(
             'Select Image',
              fimg)
 
