@@ -307,7 +307,7 @@ def createImages(fila,nomS,events):
 def loadStuff():
     stra = uploaded_files
     
-    seq_length=16
+    seq_length=25
     input_size=120
     
     ds = SampleVideo(stra, 
