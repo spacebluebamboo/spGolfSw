@@ -16,8 +16,11 @@ import matplotlib.image as mpimg
 import copy
 import tempfile
 
+import sys
+
 st.title('Golf Swing')
 
+ 
 class SampleVideo(Dataset):
     def __init__(self, path, input_size=160, transform=None):
 #         self.path = self.name
@@ -272,7 +275,8 @@ class EventDetector(nn.Module):
         out = out.view(batch_size*timesteps,9)
 
         return out
-
+    
+# @st.cache(allow_output_mutation=True,suppress_st_warning=True)
 def createImages(fila,nomS,events):
     ''' 
     Given a video file location (fila) it will save as images to a folder
@@ -287,35 +291,37 @@ def createImages(fila,nomS,events):
     
     eventNom=[0,1,2,3,4,5,6,7]
     imgALL=[]
-    nom=[]
+    fimg=[]
     for i, e in enumerate(events):
         cap.set(cv2.CAP_PROP_POS_FRAMES, e)
         ret, img = cap.read()
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
         imgALL.append(img)
-        nom.append(e)
+        fimg.append(e)
 #         print( np.shape(img) )
 #         cv2.imwrite(os.path.join(os.getcwd(),'_'+ nomS+'_'+"frame{:d}.jpg".format(eventNom[i])), img)     # save frame as JPG file
         
 
     cap.release()
-    return imgALL, nom
+    return imgALL, fimg
+
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
 @st.cache(allow_output_mutation=True,suppress_st_warning=True)
 def loadStuff():
-    stra = uploaded_files
+    
     
     seq_length=25
-    input_size=120
+#     input_size=120
     
-    ds = SampleVideo(stra, 
-                     input_size=input_size,
+    ds = SampleVideo(uploaded_files, 
+#                      input_size=input_size,
                      transform=transforms.Compose([ToTensor(),
                                 Normalize([0.485, 0.456, 0.406],
                                           [0.229, 0.224, 0.225])]))
 
+    
     dl = DataLoader(ds, batch_size=1, shuffle=False, drop_last=False)
 
     model = EventDetector(pretrain=True,
@@ -367,24 +373,43 @@ def loadStuff():
     
     
     
-    imgALL, nom=createImages(uploaded_filesCOPY,'10',events)
+    imgALL, fimg=createImages(uploaded_filesCOPY,'10',events)
 #     stra, events,imgALL, nom=[],[],[],[]
-    return stra, events,imgALL, nom
-     
+    return events,imgALL, fimg
 
 
-uploaded_files = st.file_uploader("Choose image files", accept_multiple_files=False)
 
 
+# loada = st.checkbox('Load',key='AC')
+XxX =sorted([(x, sys.getsizeof(globals().get(x))) for x in dir()], key=lambda x: x[1], reverse=True)
+memos =np.array([(sys.getsizeof(globals().get(x))) for x in dir()])
+
+print('Main',XxX,'---',np.shape(XxX))
+st.write('Memory',np.sum(memos))
+
+
+# if loada:
+uploaded_files = st.sidebar.file_uploader("Choose video", accept_multiple_files=False)
+
+uploaded_filesCOPY = copy.copy( uploaded_files )
 
 if uploaded_files:
+    events,imgALL,fimg = loadStuff()
 
-    uploaded_filesCOPY = copy.copy( uploaded_files )
+del uploaded_files
+
+# if 'good' in locals():
+
+plota = st.checkbox('Plot',key='AC2')
+
+if plota:
+    
+    
     ########################################################################
-    stra, events,imgALL,fimg = loadStuff()
     
-    
-#     fimg=['1','2']
+    print('PlotBox',sorted([(x, sys.getsizeof(globals().get(x))) for x in dir()], key=lambda x: x[1], reverse=True))
+
+
     
     imgSEL = st.selectbox(
             'Select Image',
@@ -399,7 +424,7 @@ if uploaded_files:
     plt.imshow(imgALL[numSEL])
 
     st.pyplot(f)
-    
+
     
     
     
