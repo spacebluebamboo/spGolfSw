@@ -1,9 +1,6 @@
 import streamlit as st
 import tempfile
 import cv2
-import numpy as np
-
-import matplotlib.pyplot as plt
 
 
 # change zero point
@@ -32,9 +29,7 @@ def main():
     tfile.write(f.read())
 
     cap = cv2.VideoCapture(tfile.name)
-    success, image = cap.read()
-    imgALL = []
-    ret, frame = cap.read()
+
     frame_no = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     fps = cap.get(cv2.CAP_PROP_FPS)
     duration = frame_no / fps
@@ -42,9 +37,11 @@ def main():
     video_file = open(tfile.name, "rb")
     video_bytes = video_file.read()
 
+    st.write(video_bytes)
+
     time = st.sidebar.slider("video time", 0, 20, 1)
 
-    aaa = st.video(video_file, start_time=int(time))
+    st.video(video_file, start_time=int(time))
 
     a1 = 7.0
     b1 = 68.0

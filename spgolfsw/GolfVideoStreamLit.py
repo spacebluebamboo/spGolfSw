@@ -1,7 +1,6 @@
 import scipy.io
-import pandas as pd
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torchvision import transforms
 
 # from eval import ToTensor, Normalize
@@ -46,10 +45,11 @@ def loadStuff(uploaded_files, uploaded_filesCOPY):
         save_dict = torch.load(
             "spgolfsw/models/swingnet_1800.pth.tar", map_location=torch.device("cpu")
         )
-    except:
+    except ValueError as e:
         print(
-            "Model weights not found. Download model weights and place in 'models'"
-            " folder. See README for instructions"
+            "Model weights not found. "
+            "Download model weights and place in 'models'"
+            f" folder. See README for instructions {e}"
         )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,7 +62,8 @@ def loadStuff(uploaded_files, uploaded_filesCOPY):
     print("Testing...")
     for sample in dl:
         images = sample["images"]
-        # full samples do not fit into GPU memory so evaluate sample in 'seq_length' batches
+        # full samples do not fit into GPU memory
+        # so evaluate sample in 'seq_length' batches
         batch = 0
         while batch * seq_length < images.shape[1]:
             if (batch + 1) * seq_length > images.shape[1]:

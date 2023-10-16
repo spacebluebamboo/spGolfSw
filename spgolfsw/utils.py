@@ -31,7 +31,7 @@ def createImages(fila, nomS, events):
     tfile2.write(fila.read())
     cap = cv2.VideoCapture(tfile2.name)
 
-    eventNom = [0, 1, 2, 3, 4, 5, 6, 7]
+    # eventNom = [0, 1, 2, 3, 4, 5, 6, 7]
     imgALL = []
     fimg = []
     for i, e in enumerate(events):
@@ -41,8 +41,8 @@ def createImages(fila, nomS, events):
             print("Can't receive frame (stream end?). Exiting ...")
         imgALL.append(img)
         fimg.append(e)
-    #         print( np.shape(img) )
-    #         cv2.imwrite(os.path.join(os.getcwd(),'_'+ nomS+'_'+"frame{:d}.jpg".format(eventNom[i])), img)     # save frame as JPG file
+    #  print( np.shape(img) )
+    #  cv2.imwrite(os.path.join(os.getcwd(),'_'+ nomS+'_'+"frame{:d}.jpg".format(eventNom[i])), img)     # save frame as JPG file
 
     cap.release()
     return imgALL, fimg

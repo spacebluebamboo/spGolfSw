@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torch.nn as nn
 from torch.autograd import Variable
 import cv2
@@ -59,9 +59,8 @@ class SampleVideo(Dataset):
             b_img_rgb = cv2.cvtColor(b_img, cv2.COLOR_BGR2RGB)
             images.append(b_img_rgb)
         cap.release()
-        #         cv2.destroyAllWindows()
 
-        labels = np.zeros(len(images))  # only for compatibility with transforms
+        labels = np.zeros(len(images))  # only for compat with transforms
         sample = {"images": np.asarray(images), "labels": np.asarray(labels)}
 
         if self.transform:
@@ -88,7 +87,9 @@ class Normalize(object):
 
     def __call__(self, sample):
         images, labels = sample["images"], sample["labels"]
-        images.sub_(self.mean[None, :, None, None]).div_(self.std[None, :, None, None])
+        images.sub_(self.mean[None, :, None, None]).div_(
+            self.std[None, :, None, None]
+        )  # noqa: 501
         return {"images": images, "labels": labels}
 
 
