@@ -1,8 +1,0 @@
-torch
-torchvision
-pandas
-opencv-python-headless
-scipy
-Pillow
-matplotlib
-numpy

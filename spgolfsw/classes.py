@@ -1,40 +1,29 @@
-import scipy.io
-import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
-# from eval import ToTensor, Normalize
-# from model import EventDetector
-import numpy as np
-import torch.nn.functional as F
-import cv2
+import torch.nn as nn
 from torch.autograd import Variable
-import streamlit as st
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-    
-import copy
+import cv2
+import numpy as np
 import tempfile
+import math
 
-import sys
+from utils import conv_1x1_bn, conv_bn
 
-st.title('Golf Swing')
 
- 
 class SampleVideo(Dataset):
-    def __init__(self, path, input_size=160, transform=None):
+    def __init__(self, uploaded_files, input_size=160, transform=None):
 #         self.path = self.name
         self.input_size = input_size
         self.transform = transform
+        self.uploaded_files = uploaded_files
 
     def __len__(self):
         return 1
 
     def __getitem__(self, idx):
-        
         # create a fake file ffs
         tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(uploaded_files.read())
+        tfile.write(self.uploaded_files.read())
         cap = cv2.VideoCapture(tfile.name)
 
 #         cap = cv2.VideoCapture(self)
@@ -72,7 +61,6 @@ class SampleVideo(Dataset):
         return sample
     
 
-
 class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
     def __call__(self, sample):
@@ -91,28 +79,6 @@ class Normalize(object):
         images, labels = sample['images'], sample['labels']
         images.sub_(self.mean[None, :, None, None]).div_(self.std[None, :, None, None])
         return {'images': images, 'labels': labels}
-
-    
-    
-import torch.nn as nn
-import math
-
-# ""https://github.com/tonylins/pytorch-mobilenet-v2""
-
-def conv_bn(inp, oup, stride):
-    return nn.Sequential(
-        nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
-        nn.BatchNorm2d(oup),
-        nn.ReLU6(inplace=True)
-    )
-
-
-def conv_1x1_bn(inp, oup):
-    return nn.Sequential(
-        nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
-        nn.BatchNorm2d(oup),
-        nn.ReLU6(inplace=True)
-    )
 
 
 class InvertedResidual(nn.Module):
@@ -221,9 +187,8 @@ class MobileNetV2(nn.Module):
                 n = m.weight.size(1)
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
-
     
-import torch.nn as nn
+
 class EventDetector(nn.Module):
     def __init__(self, pretrain, width_mult, lstm_layers, lstm_hidden, bidirectional=True, dropout=True):
         super(EventDetector, self).__init__()
@@ -234,7 +199,7 @@ class EventDetector(nn.Module):
         self.dropout = dropout
 
         net = MobileNetV2(width_mult=width_mult)
-        state_dict_mobilenet = torch.load('mobilenet_v2.pth.tar',map_location=torch.device('cpu'))
+        state_dict_mobilenet = torch.load('spgolfsw/mobilenet_v2.pth.tar',map_location=torch.device('cpu'))
         if pretrain:
             net.load_state_dict(state_dict_mobilenet)
 
@@ -275,157 +240,3 @@ class EventDetector(nn.Module):
         out = out.view(batch_size*timesteps,9)
 
         return out
-    
-# @st.cache(allow_output_mutation=True,suppress_st_warning=True)
-def createImages(fila,nomS,events):
-    ''' 
-    Given a video file location (fila) it will save as images to a folder
-    Given positions in video (pos) these images from the video are saved
-    pos is created based on positions of swings
-    '''
-    fila
-    tfile2 = tempfile.NamedTemporaryFile(delete=False)
-    tfile2.write(fila.read())
-    cap = cv2.VideoCapture(tfile2.name)
-    
-    
-    eventNom=[0,1,2,3,4,5,6,7]
-    imgALL=[]
-    fimg=[]
-    for i, e in enumerate(events):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, e)
-        ret, img = cap.read()
-        if not ret:
-            print("Can't receive frame (stream end?). Exiting ...")
-        imgALL.append(img)
-        fimg.append(e)
-#         print( np.shape(img) )
-#         cv2.imwrite(os.path.join(os.getcwd(),'_'+ nomS+'_'+"frame{:d}.jpg".format(eventNom[i])), img)     # save frame as JPG file
-        
-
-    cap.release()
-    return imgALL, fimg
-
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-@st.cache(allow_output_mutation=True,suppress_st_warning=True)
-def loadStuff():
-    
-    
-    seq_length=25
-#     input_size=120
-    
-    ds = SampleVideo(uploaded_files, 
-#                      input_size=input_size,
-                     transform=transforms.Compose([ToTensor(),
-                                Normalize([0.485, 0.456, 0.406],
-                                          [0.229, 0.224, 0.225])]))
-
-    
-    dl = DataLoader(ds, batch_size=1, shuffle=False, drop_last=False)
-
-    model = EventDetector(pretrain=True,
-                      width_mult=1.,
-                      lstm_layers=1,
-                      lstm_hidden=256,
-                      bidirectional=True,
-                      dropout=False)
-    try:
-        save_dict = torch.load('models/swingnet_1800.pth.tar',map_location=torch.device('cpu'))
-    except:
-        print("Model weights not found. Download model weights and place in 'models' folder. See README for instructions")
-    
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Using device:', device)
-    model.load_state_dict(save_dict['model_state_dict'])
-    model.to(device)
-    model.eval()
-    print("Loaded model weights")
-
-    print('Testing...')
-    for sample in dl:
-        images = sample['images']
-        # full samples do not fit into GPU memory so evaluate sample in 'seq_length' batches
-        batch = 0
-        while batch * seq_length < images.shape[1]:
-            if (batch + 1) * seq_length > images.shape[1]:
-                image_batch = images[:, batch * seq_length:, :, :, :]
-            else:
-                image_batch = images[:, batch * seq_length:(batch + 1) * seq_length, :, :, :]
-            logits = model(image_batch)
-            if batch == 0:
-                probs = F.softmax(logits.data, dim=1).cpu().numpy()
-            else:
-                probs = np.append(probs, F.softmax(logits.data, dim=1).cpu().numpy(), 0)
-            batch += 1
-
-
-    events = np.argmax(probs, axis=0)[:-1]
-    print('Predicted event frames: {}'.format(events))
-
-
-    confidence = []
-    for i, e in enumerate(events):
-        confidence.append(probs[e, i])
-    print('Confidence: {}'.format([np.round(c, 3) for c in confidence]))
-    
-    
-    
-    
-    imgALL, fimg=createImages(uploaded_filesCOPY,'10',events)
-#     stra, events,imgALL, nom=[],[],[],[]
-    return events,imgALL, fimg
-
-
-
-
-# loada = st.checkbox('Load',key='AC')
-XxX =sorted([(x, sys.getsizeof(globals().get(x))) for x in dir()], key=lambda x: x[1], reverse=True)
-memos =np.array([(sys.getsizeof(globals().get(x))) for x in dir()])
-
-print('Main',XxX,'---',np.shape(XxX))
-st.write('Memory',np.sum(memos))
-
-
-# if loada:
-uploaded_files = st.sidebar.file_uploader("Choose video", accept_multiple_files=False)
-
-uploaded_filesCOPY = copy.copy( uploaded_files )
-
-if uploaded_files:
-    events,imgALL,fimg = loadStuff()
-
-del uploaded_files
-
-# if 'good' in locals():
-
-plota = st.checkbox('Plot',key='AC2')
-
-if plota:
-    
-    
-    ########################################################################
-    
-    print('PlotBox',sorted([(x, sys.getsizeof(globals().get(x))) for x in dir()], key=lambda x: x[1], reverse=True))
-
-
-    
-    imgSEL = st.selectbox(
-            'Select Image',
-             fimg)
-
-    numSEL=[oo for oo,x in enumerate(fimg) if x==imgSEL][0]
-
-
-
-    f=plt.figure(figsize=(6,6))
-
-    plt.imshow(imgALL[numSEL])
-
-    st.pyplot(f)
-
-    
-    
-    
-
